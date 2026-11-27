@@ -55,6 +55,4 @@ european-court-observatory/
 ---
 
 ## 5. Running & Hosting
-* **Local Preview:** Open `index.html` directly in any modern browser, or run a lightweight local server (`python -m http.server 8000`).
-* **Rebuilding Data:** Run `python scripts/prepare_data.py` to regenerate `data/processed/eujs_clean.json` from the raw Excel workbook.
-* **Live Hosting (GitHub Pages):** Push the repository to GitHub and enable **Settings → Pages → Deploy from branch (`main` / `/root`)**.
+* **https://eclipsexvi.github.io/Desperados-court-obs/)**
