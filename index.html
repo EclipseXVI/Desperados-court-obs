@@ -14,6 +14,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
@@ -156,13 +157,17 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
           </svg>
         </button>
+        <button id="themeToggleBtn" type="button" class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-slate-800 text-slate-100 hover:bg-slate-700 border border-slate-600 transition-colors">
+          <span id="themeIcon">🌙</span>
+          <span id="themeLabel">Dark</span>
+        </button>
       </div>
       <!-- Scrollable Markdown Content -->
       <div id="readmeContent" class="p-6 sm:p-7 overflow-y-auto flex-1 markdown-body">
         <p class="text-slate-500 text-sm">Loading project documentation...</p>
       </div>
       <!-- Modal Footer -->
-      <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
+      <div class="px-5 py-3 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
         <span>Press <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono text-slate-700">Esc</kbd> or click outside to close</span>
         <button id="closeReadmeFooterBtn" type="button" class="px-3.5 py-1.5 rounded-lg bg-navy text-white font-semibold hover:bg-eublue transition-colors cursor-pointer">
           Close
@@ -403,7 +408,7 @@
 
       <!-- Collapsible Missing Value Audit Table (Step 2/3 Transparency) -->
       <div class="border border-slate-200 rounded-xl overflow-hidden">
-        <button id="toggleAuditBtn" type="button" class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+        <button id="toggleAuditBtn" type="button" class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 transition-colors text-left cursor-pointer">
           <div class="flex items-center gap-2.5">
             <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">!</span>
             <span id="auditToggleTitle" class="text-sm font-semibold text-navy">
@@ -445,6 +450,27 @@
   </footer>
 
   <script>
+    const htmlEl = document.documentElement;
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+const themeIcon = document.getElementById('themeIcon');
+const themeLabel = document.getElementById('themeLabel');
+
+function applyTheme(isDark) {
+  htmlEl.classList.toggle('dark', isDark);
+  themeIcon.textContent = isDark ? '☀️' : '🌙';
+  themeLabel.textContent = isDark ? 'Light' : 'Dark';
+  localStorage.setItem('observatory_theme', isDark ? 'dark' : 'light');
+}
+
+// Initialize from saved preference (or OS preference)
+const savedTheme = localStorage.getItem('observatory_theme');
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+applyTheme(savedTheme ? savedTheme === 'dark' : prefersDark);
+
+themeToggleBtn.addEventListener('click', () => {
+  applyTheme(!htmlEl.classList.contains('dark'));
+  // Optional: re-render charts here if you update Chart.js grid/text colors
+});
     // =========================================================================
     // 1. EMBEDDED FALLBACK README MARKDOWN (TEAM DESPERADOS)
     // =========================================================================
