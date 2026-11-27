@@ -28,23 +28,155 @@
     };
   </script>
 
-  <!-- Chart.js via CDN -->
+  <!-- Chart.js v4 & Marked.js via CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <!-- Clean Markdown Typography Styling for README Modal -->
+  <style>
+    .markdown-body h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #0F294A;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #E2E8F0;
+    }
+    .markdown-body h2 {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: #0F294A;
+      margin-top: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .markdown-body h3 {
+      font-size: 0.975rem;
+      font-weight: 600;
+      color: #1E293B;
+      margin-top: 1rem;
+      margin-bottom: 0.35rem;
+    }
+    .markdown-body p {
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: #334155;
+      margin-bottom: 0.75rem;
+    }
+    .markdown-body ul, .markdown-body ol {
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: #334155;
+      margin-bottom: 0.85rem;
+      padding-left: 1.4rem;
+    }
+    .markdown-body ul { list-style-type: disc; }
+    .markdown-body ol { list-style-type: decimal; }
+    .markdown-body li { margin-bottom: 0.3rem; }
+    .markdown-body strong { color: #0F294A; font-weight: 600; }
+    .markdown-body blockquote {
+      border-left: 4px solid #D4AF37;
+      background-color: #F8FAFC;
+      padding: 0.75rem 1rem;
+      margin: 0.85rem 0;
+      border-radius: 0 0.5rem 0.5rem 0;
+      color: #1E293B;
+      font-style: italic;
+    }
+    .markdown-body blockquote p { margin-bottom: 0; }
+    .markdown-body code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.8rem;
+      background-color: #F1F5F9;
+      color: #0F294A;
+      padding: 0.15rem 0.35rem;
+      border-radius: 0.25rem;
+    }
+    .markdown-body pre {
+      background-color: #0F172A;
+      color: #E2E8F0;
+      padding: 0.9rem 1rem;
+      border-radius: 0.65rem;
+      overflow-x: auto;
+      margin: 0.85rem 0;
+      font-size: 0.78rem;
+      line-height: 1.55;
+    }
+    .markdown-body pre code {
+      background-color: transparent;
+      color: inherit;
+      padding: 0;
+    }
+    .markdown-body table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1rem 0;
+      font-size: 0.82rem;
+    }
+    .markdown-body th, .markdown-body td {
+      border: 1px solid #E2E8F0;
+      padding: 0.5rem 0.75rem;
+      text-align: left;
+    }
+    .markdown-body th {
+      background-color: #F8FAFC;
+      color: #0F294A;
+      font-weight: 600;
+    }
+    .markdown-body hr {
+      border: 0;
+      border-top: 1px solid #E2E8F0;
+      margin: 1.25rem 0;
+    }
+  </style>
 </head>
 <body class="bg-canvas text-slate-800 font-sans antialiased min-h-screen flex flex-col">
 
   <!-- Toast Notification (replaces alert/confirm) -->
-  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden max-w-sm rounded-xl bg-navy text-white px-4 py-3 shadow-xl border border-slate-700 text-sm flex items-center gap-3 transition-opacity duration-300">
+  <div id="toast" role="status" aria-live="polite" class="fixed bottom-5 right-5 z-50 hidden max-w-sm rounded-xl bg-navy text-white px-4 py-3 shadow-xl border border-slate-700 text-sm flex items-center gap-3 transition-opacity duration-300">
     <span id="toastIcon" class="text-eugold font-bold">●</span>
     <span id="toastMessage"></span>
   </div>
 
-  <!-- Top Navigation Bar -->
+  <!-- Dynamic Project README Modal -->
+  <div id="readmeModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 sm:p-6 bg-slate-900/70 backdrop-blur-sm" role="dialog" aria-modal="true" aria-labelledby="readmeModalTitle">
+    <div id="readmeModalPanel" class="bg-white w-full max-w-3xl max-h-[88vh] rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="px-5 py-4 bg-navy text-white flex flex-wrap items-center justify-between gap-3 border-b-2 border-eugold shrink-0">
+        <div class="flex items-center gap-2.5">
+          <svg class="w-5 h-5 text-eugold shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />
+          </svg>
+          <h2 id="readmeModalTitle" class="text-base font-bold tracking-tight">Project README</h2>
+          <span id="readmeStatusPill" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/15 text-slate-100 border border-white/20">
+            Loading...
+          </span>
+        </div>
+        <button id="closeReadmeBtn" type="button" aria-label="Close README modal" class="p-1.5 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <!-- Scrollable Markdown Content -->
+      <div id="readmeContent" class="p-6 sm:p-7 overflow-y-auto flex-1 markdown-body">
+        <p class="text-slate-500 text-sm">Loading project documentation...</p>
+      </div>
+      <!-- Modal Footer -->
+      <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500 shrink-0">
+        <span>Press <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-[11px] font-mono text-slate-700">Esc</kbd> or click outside to close</span>
+        <button id="closeReadmeFooterBtn" type="button" class="px-3.5 py-1.5 rounded-lg bg-navy text-white font-semibold hover:bg-eublue transition-colors cursor-pointer">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Navigation Header -->
   <header class="bg-navy text-white shadow-md border-b-4 border-eugold">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
       <div class="flex items-start sm:items-center gap-3">
         <!-- Institutional Emblem -->
-        <div class="w-10 h-10 rounded-lg bg-eublue border border-eugold/60 flex items-center justify-center shrink-0 shadow-inner">
+        <div class="w-10 h-10 rounded-xl bg-eublue border border-eugold/60 flex items-center justify-center shrink-0 shadow-inner">
           <svg class="w-6 h-6 text-eugold" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m-7-7 3-7 3 7a3 3 0 0 1-6 0Zm14 0-3-7-3 7a3 3 0 0 0 6 0ZM5 7h14M8 21h8" />
           </svg>
@@ -54,28 +186,28 @@
             European Court Performance Observatory
           </h1>
           <p class="text-xs sm:text-sm text-slate-300 mt-0.5">
-            European Semester Policy Analyst Prototype &bull; Team Desperados
+            European Semester Policy Analyst Prototype &bull; Team Desperados (MSc Data Science for Business)
           </p>
         </div>
       </div>
 
-      <!-- Metadata Pills & Custom JSON Loader -->
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/10 text-slate-100 border border-white/15">
-          Publication: 2026 EUJS
-        </span>
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/10 text-slate-100 border border-white/15">
-          Latest Obs: 2024
-        </span>
-        <span id="missingPill" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30">
-          Missing Audit: 28 NaNs in EL
-        </span>
+      <!-- Header Actions & Status Badges -->
+      <div class="flex flex-wrap items-center gap-2.5">
         <span id="dataSourceBadge" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
-          Source: Loading...
+          Loading dataset...
         </span>
 
-        <label for="jsonUploadInput" class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-eugold text-navy hover:bg-amber-400 transition-colors shadow-sm ml-1">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+        <!-- Prominent Project README Button -->
+        <button id="openReadmeBtn" type="button" class="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-white text-navy hover:bg-slate-100 transition-colors shadow-sm border border-white/40">
+          <svg class="w-4 h-4 text-eublue" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />
+          </svg>
+          Project README
+        </button>
+
+        <!-- Client-side Custom JSON Loader -->
+        <label for="jsonUploadInput" class="cursor-pointer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold bg-eugold text-navy hover:bg-amber-400 transition-colors shadow-sm">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-8-4-4m0 0L8 8m4-4v12" />
           </svg>
           Load Custom JSON
@@ -85,24 +217,42 @@
     </div>
   </header>
 
+  <!-- Explicit Metadata Banner -->
+  <div class="bg-slate-900 text-slate-200 border-b border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <p class="font-medium tracking-wide">
+        Data Source: <span class="text-white font-semibold">2026 EU Justice Scoreboard (CEPEJ &amp; Eurostat)</span>
+        <span class="mx-2 text-slate-500">|</span>
+        Observation Years: <span class="text-white font-semibold">2010–2024 (Latest: 2024)</span>
+        <span class="mx-2 text-slate-500">|</span>
+        Publication Year: <span class="text-white font-semibold">2026</span>
+        <span class="mx-2 text-slate-500">|</span>
+        <span class="text-emerald-300 font-semibold">Zero Synthetic Data</span>
+      </p>
+      <span id="missingPill" class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30">
+        Audit: 28 Missing Cells (EL)
+      </span>
+    </div>
+  </div>
+
   <!-- Main Workspace -->
   <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1">
 
-    <!-- Control Bar (Filters) -->
+    <!-- Interactive Filters Bar -->
     <section class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 sm:p-5">
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
 
-        <!-- Country Toggle Chips -->
+        <!-- Country Multi-Select Toggle Chips -->
         <div class="lg:col-span-4">
           <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-            Member States (Min. 1 Active)
+            Member States (Multi-Select)
           </span>
           <div id="countryChips" class="flex flex-wrap gap-2">
             <!-- Populated by JS -->
           </div>
         </div>
 
-        <!-- Case Category Dropdown -->
+        <!-- Case Category Selector -->
         <div class="lg:col-span-3">
           <label for="categorySelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
             Case Category (1st Instance)
@@ -114,7 +264,7 @@
           </select>
         </div>
 
-        <!-- Primary Metric Dropdown -->
+        <!-- Primary Metric Selector -->
         <div class="lg:col-span-3">
           <label for="metricSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
             Primary Trajectory Metric
@@ -122,21 +272,21 @@
           <select id="metricSelect" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-eublue focus:border-eublue">
             <option value="disposition_time_days" selected>Disposition Time (days)</option>
             <option value="clearance_rate_pct">Clearance Rate (%)</option>
-            <option value="incoming_per_100">Incoming Caseload (per 100)</option>
-            <option value="pending_per_100">Pending Caseload (per 100)</option>
+            <option value="incoming_per_100">Incoming Cases (per 100 inhab.)</option>
+            <option value="pending_per_100">Pending Cases (per 100 inhab.)</option>
           </select>
         </div>
 
-        <!-- Year Range Toggle -->
+        <!-- Observation Window Toggle -->
         <div class="lg:col-span-2">
           <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
             Observation Window
           </span>
           <div class="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200 w-full">
-            <button id="btnScopeV1" type="button" class="flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm">
+            <button id="btnScopeV1" type="button" title="Scoreboard Core (2014–2024)" class="flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm cursor-pointer">
               2014–2024
             </button>
-            <button id="btnScopeFull" type="button" class="flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900">
+            <button id="btnScopeFull" type="button" title="Full Series (2010–2024)" class="flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
               2010–2024
             </button>
           </div>
@@ -145,17 +295,17 @@
       </div>
     </section>
 
-    <!-- KPI Cards Row -->
-    <section aria-label="2024 Country KPIs">
+    <!-- Top KPI Summary Cards Row -->
+    <section aria-label="2024 Country KPI Summary">
       <div id="kpiGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <!-- Populated by JS -->
       </div>
     </section>
 
-    <!-- Two-Column Charts Section -->
+    <!-- Main Charts Grid -->
     <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-      <!-- Left (Wider): Historical Trajectory Line Chart -->
+      <!-- Chart 1: Historical Trajectory Line Chart -->
       <div class="lg:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex flex-col">
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
           <div>
@@ -163,11 +313,11 @@
               Historical Trajectory — Disposition Time (days)
             </h2>
             <p id="lineChartSubtitle" class="text-xs text-slate-500 mt-0.5">
-              Litigious Civil &amp; Commercial &bull; Gaps indicate missing CEPEJ observations (not interpolated)
+              Litigious Civil &amp; Commercial &bull; Honest gaps shown for missing CEPEJ observations
             </p>
           </div>
           <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200 self-start">
-            spanGaps: false
+            No Interpolation
           </span>
         </div>
         <div class="relative w-full h-80 sm:h-96">
@@ -175,68 +325,89 @@
         </div>
       </div>
 
-      <!-- Right: Budget Effectiveness Scatter Plot -->
+      <!-- Chart 2: 2024 Budget Effectiveness Scatter Plot -->
       <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex flex-col">
-        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
-          <div>
-            <h2 class="text-base font-bold text-navy">
-              Budget Effectiveness (2024)
-            </h2>
-            <p id="scatterSubtitle" class="text-xs text-slate-500 mt-0.5">
-              Judicial Budget vs. Disposition Time (Litigious Civil &amp; Comm.)
-            </p>
+        <div class="flex flex-col gap-3 mb-4">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h2 class="text-base font-bold text-navy">
+                2024 Budget Effectiveness
+              </h2>
+              <p id="scatterSubtitle" class="text-xs text-slate-500 mt-0.5">
+                Court Budget vs. 2024 Disposition Time (Litigious Civil &amp; Comm.)
+              </p>
+            </div>
           </div>
-          <!-- Budget X-Axis Toggle -->
-          <div class="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 shrink-0 self-start">
-            <button id="btnBudgetEur" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm">
-              €/inhab.
-            </button>
-            <button id="btnBudgetGdp" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900">
-              % GDP
-            </button>
+
+          <!-- X & Y Axis Toggles -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+            <div class="flex items-center gap-1.5">
+              <span class="text-[11px] font-semibold text-slate-500 uppercase">X:</span>
+              <div class="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200">
+                <button id="btnBudgetEur" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm cursor-pointer">
+                  EUR / inhab.
+                </button>
+                <button id="btnBudgetGdp" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+                  % of GDP
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+              <span class="text-[11px] font-semibold text-slate-500 uppercase">Y:</span>
+              <div class="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200">
+                <button id="btnScatterDt" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-navy text-white shadow-sm cursor-pointer">
+                  Disp. Time
+                </button>
+                <button id="btnScatterCr" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer">
+                  Clearance %
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="relative w-full h-80 sm:h-96">
+
+        <div class="relative w-full h-72 sm:h-80 flex-1">
           <canvas id="scatterChart"></canvas>
         </div>
-        <p class="text-[11px] text-slate-400 mt-2 text-right">
-          Lower Y-axis = faster resolution &bull; Source: CEPEJ &amp; Eurostat (COFOG99 Law Courts)
+        <p id="scatterFootnote" class="text-[11px] text-slate-400 mt-2 text-right">
+          Lower Disposition Time = faster resolution &bull; Source: CEPEJ &amp; Eurostat COFOG99
         </p>
       </div>
 
     </section>
 
-    <!-- Embedded Data Hygiene & Country Caveats Section -->
+    <!-- Country Notes & Data-Hygiene Guardrails Panel -->
     <section class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 space-y-5">
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
         <div>
           <h2 class="text-base font-bold text-navy flex items-center gap-2">
-            <svg class="w-4 h-4 text-eugold" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-4 h-4 text-eugold shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
               <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
             </svg>
-            Data Hygiene &amp; Country Caveats
+            Country Notes &amp; Data-Hygiene Guardrails
           </h2>
           <p class="text-xs text-slate-500 mt-0.5">
-            Documented CEPEJ / EU Justice Scoreboard methodology breaks, denominator quirks, and structural notes for active countries.
+            Methodology breaks, denominator effects, and category-matching caveats for the selected Member States.
           </p>
         </div>
         <span class="text-xs font-medium text-slate-500">
-          Observation Year &ne; Publication Year (2024 data in 2026 edition)
+          Criminal cases excluded from EUJS Figures 1–14
         </span>
       </div>
 
-      <!-- Country Caveat Cards -->
+      <!-- Dynamic Country Caveat Cards -->
       <div id="caveatsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <!-- Populated by JS -->
       </div>
 
-      <!-- Collapsible Missing Value Audit Table -->
+      <!-- Collapsible Missing Value Audit Table (Step 2/3 Transparency) -->
       <div class="border border-slate-200 rounded-xl overflow-hidden">
-        <button id="toggleAuditBtn" type="button" class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left">
-          <div class="flex items-center gap-2">
+        <button id="toggleAuditBtn" type="button" class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left cursor-pointer">
+          <div class="flex items-center gap-2.5">
             <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">!</span>
             <span id="auditToggleTitle" class="text-sm font-semibold text-navy">
-              View Missing Value Audit (28 cells)
+              Missing Value Audit Table (28 logged cells — all in EL)
             </span>
           </div>
           <svg id="auditChevron" class="w-4 h-4 text-slate-500 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -268,30 +439,81 @@
   <!-- Footer -->
   <footer class="bg-white border-t border-slate-200 mt-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
-      <span>European Court Performance Observatory (v1) &bull; MSc Data Science for Business</span>
-      <span>Data: 2026 EU Justice Scoreboard (CEPEJ-STAT &amp; Eurostat) &bull; Zero Synthetic Data</span>
+      <span>European Court Performance Observatory (v1) &bull; Team Desperados</span>
+      <span>Data: 2026 EU Justice Scoreboard (CEPEJ-STAT &amp; Eurostat) &bull; Latest Observation Year: 2024</span>
     </div>
   </footer>
 
   <script>
     // =========================================================================
-    // 1. CONSTANTS, COLOR PALETTE & METADATA
+    // 1. EMBEDDED FALLBACK README MARKDOWN (TEAM DESPERADOS)
+    // =========================================================================
+    const FALLBACK_README_MD = `# European Court Performance Observatory
+
+**Course:** Data Science for Business (MSc in Data Science)  
+**Team Desperados:** Thomas Konstantinou, Areti Vika, Christos Rountaris, Maria Kuriaki Diafonidou, Lampros Kouremenos, Athanasios Mponos  
+**Track:** Option B — Working Prototype
+
+---
+
+## 1. User Persona & Core Research Question
+
+**Target User:** European Semester Policy Analyst evaluating whether national judicial budgets and EU Recovery & Resilience Facility (RRF) investments translate into measurable court efficiency gains (Clearance Rate ≥ 100% and falling Disposition Time).
+
+> *"Across four EU judicial systems with contrasting funding profiles (Sweden, Italy, Romania, and Greece), how do incoming caseloads, clearance rates, and disposition times evolve over time—and do higher-funded systems consistently convert resources into faster case resolution without backlog accumulation?"*
+
+## 2. Bounded First Version (v1 Scope)
+
+* **Member States (4):**
+  * **Greece (\`EL\`):** Primary focus country — moderate-to-low per-capita court funding undergoing RRF-backed structural reforms.
+  * **Sweden (\`SE\`):** Upper efficiency frontier — high per-capita funding and digitalized courts.
+  * **Italy (\`IT\`):** Civil-law peer — large Southern European budget with RRF backlog-reduction targets.
+  * **Romania (\`RO\`):** High-caseload growth peer — high % of GDP budget effort paired with surging civil demand.
+* **Core Metrics (2014–2024 core window; 2010–2024 full series):**
+  * **Caseloads:** Incoming and pending cases per 100 inhabitants (1st instance).
+  * **Clearance Rate (CR):** \`CR = (Resolved / Incoming) × 100\` (≥ 100% indicates backlog reduction).
+  * **Disposition Time (DT):** \`DT = (Pending / Resolved) × 365\` (estimated calendar days to clear pending stock).
+  * **Budget Context:** General government expenditure on law courts (EUR per inhabitant & % of GDP, Eurostat COFOG99).
+* **Comparable Non-Criminal Case Tiers:** Litigious Civil & Commercial, Administrative, and All Non-Criminal combined (criminal cases excluded).
+
+## 3. Data-Hygiene Guardrails
+
+* **Publication vs. Observation Lag:** Published in **2026** (2026 EU Justice Scoreboard); latest judicial observation year is **2024**.
+* **Missing Value Transparency:** **28 missing cells** (all in \`EL\`: 2014, 2016, 2019, 2020 for All Non-Criminal; 2014 & 2019 for Administrative; 2020 for Litigious Civil & Commercial) are preserved as \`null\` and rendered as honest line breaks (\`spanGaps: false\`).
+* **Methodology Breaks:** Flags documented CEPEJ methodology changes in Greece (\`*\`), Italy's 2020 COVID-19 court suspension spike, and non-litigious registry distortions.
+* **Zero Synthetic Data:** Every figure is extracted reproducibly from \`2026_EUJS_quantitative.xlsx\`.
+
+## 4. Repository Structure
+
+\`\`\`text
+Desperados-court-obs/
+├── data/
+│   ├── raw/2026_EUJS_quantitative.xlsx   # Preserved raw source (CEPEJ / 2026 EUJS)
+│   └── processed/eujs_clean.json         # Standardized JSON dataset & audit log
+├── scripts/
+│   └── prepare_data.py                   # Reproducible ETL & audit script
+├── docs/
+│   └── data_dictionary.md                # Schema, denominators & footnotes
+├── index.html                            # Interactive observatory (GitHub Pages)
+└── README.md                             # Project documentation
+\`\`\``;
+
+    // =========================================================================
+    // 2. CONSTANTS, COLOR-BLIND-FRIENDLY PALETTE & METADATA
     // =========================================================================
     const COUNTRY_META = {
       EL: {
         name: 'Greece',
-        color: '#0052CC',
-        bgTint: 'rgba(0, 82, 204, 0.10)',
+        color: '#2563eb',
         fundingTier: 'Moderate-to-Low per Capita / Major RRF Reformer',
         caveats: [
           'Methodology break (*) flagged in CEPEJ/EUJS series across civil/commercial and administrative figures.',
-          'Missing observations (NaN) in 2014, 2016, 2019, 2020 for All Non-Criminal; 2014 & 2019 for Administrative; and 2020 for Litigious Civil & Commercial.'
+          'Missing observations (NaN) in 2014, 2016, 2019, 2020 for All Non-Criminal; 2014 & 2019 for Administrative; and 2020 for Litigious Civil & Commercial (28 cells total).'
         ]
       },
       IT: {
         name: 'Italy',
-        color: '#0D9488',
-        bgTint: 'rgba(13, 148, 136, 0.10)',
+        color: '#059669',
         fundingTier: 'High per Capita / Major RRF Reformer',
         caveats: [
           '2020 COVID-19 court suspension spike visible in Disposition Time (673.87 days in Litigious Civil & Commercial).',
@@ -300,18 +522,16 @@
       },
       RO: {
         name: 'Romania',
-        color: '#D97706',
-        bgTint: 'rgba(217, 119, 6, 0.10)',
+        color: '#d97706',
         fundingTier: 'Low per Capita / High % of GDP Effort',
         caveats: [
           'Highest incoming litigious civil & commercial caseload among peers (8.42 per 100 inhabitants in 2024), yet maintains low disposition time (179.82 days).',
-          'Highest judicial expenditure as % of GDP (0.410% in 2024) despite lower EUR per inhabitant (76.08 EUR) due to GDP denominator.'
+          'Highest judicial expenditure as % of GDP (0.41% in 2024) despite lower EUR per inhabitant (€76.08) due to GDP denominator.'
         ]
       },
       SE: {
         name: 'Sweden',
-        color: '#6366F1',
-        bgTint: 'rgba(99, 102, 241, 0.10)',
+        color: '#7c3aed',
         fundingTier: 'High per Capita / Lean Budget Share of GDP',
         caveats: [
           'Administrative incoming caseload (1.64 per 100 in 2024) is over double its litigious civil & commercial caseload (0.70 per 100), reflecting Sweden’s broad administrative court remit (tax, social insurance, migration).'
@@ -328,8 +548,8 @@
     const METRIC_META = {
       disposition_time_days: { label: 'Disposition Time (days)', unit: 'days', decimals: 1 },
       clearance_rate_pct: { label: 'Clearance Rate (%)', unit: '%', decimals: 2 },
-      incoming_per_100: { label: 'Incoming Caseload (per 100)', unit: 'cases / 100 inhab.', decimals: 2 },
-      pending_per_100: { label: 'Pending Caseload (per 100)', unit: 'cases / 100 inhab.', decimals: 2 }
+      incoming_per_100: { label: 'Incoming Cases (per 100 inhab.)', unit: 'cases / 100', decimals: 2 },
+      pending_per_100: { label: 'Pending Cases (per 100 inhab.)', unit: 'cases / 100', decimals: 2 }
     };
 
     const SHEET_MAP = {
@@ -354,7 +574,7 @@
     };
 
     // =========================================================================
-    // 2. EXACT AUDITED EMBEDDED DATASET (2026 EUJS — NO SYNTHETIC NUMBERS)
+    // 3. EXACT AUDITED EMBEDDED FALLBACK DATA (2026_EUJS_quantitative.xlsx)
     // =========================================================================
     const EMBEDDED_DATA = {
       efficiencyYears: [2010, 2012, 2014, 2016, 2019, 2020, 2021, 2022, 2023, 2024],
@@ -368,15 +588,15 @@
             SE: [2.0874, 2.0662, 2.0308, 2.3194, 2.6589, 2.7409, 2.5738, 2.2816, 2.4025, 2.5925]
           },
           disposition_time_days: {
-            EL: [509.52, 677.23, null, null, null, null, 663.70, 633.71, 642.25, 637.83],
-            IT: [395.09, 390.56, 376.52, 386.80, 367.20, 471.46, 380.97, 358.23, 347.33, 372.72],
-            RO: [156.01, 161.50, 148.25, 153.86, 151.73, 185.54, 160.40, 171.39, 227.62, 192.21],
-            SE: [184.79, 148.88, 133.06, 133.02, 138.35, 123.35, 116.99, 123.12, 108.24, 106.41]
+            EL: [509.5185, 677.2289, null, null, null, null, 663.6966, 633.7076, 642.2477, 637.8321],
+            IT: [395.0942, 390.5597, 376.5215, 386.8026, 367.204, 471.4582, 380.9742, 358.2329, 347.3323, 372.7199],
+            RO: [156.0131, 161.4994, 148.2505, 153.8562, 151.7349, 185.5426, 160.4047, 171.3877, 227.6243, 192.2096],
+            SE: [184.7904, 148.8822, 133.0573, 133.0178, 138.3546, 123.3499, 116.9878, 123.117, 108.2447, 106.4073]
           },
           clearance_rate_pct: {
-            EL: [79.12, 65.44, null, null, null, null, 91.18, 100.60, 98.18, 87.11],
-            IT: [108.89, 108.37, 109.35, 104.51, 103.30, 102.61, 106.82, 105.52, 106.24, 96.91],
-            RO: [91.40, 95.67, 111.12, 101.28, 100.24, 96.69, 102.44, 96.18, 86.50, 98.54],
+            EL: [79.12, 65.44, null, null, null, null, 91.18, 100.6, 98.18, 87.11],
+            IT: [108.89, 108.37, 109.35, 104.51, 103.3, 102.61, 106.82, 105.52, 106.24, 96.91],
+            RO: [91.4, 95.67, 111.12, 101.28, 100.24, 96.69, 102.44, 96.18, 86.5, 98.54],
             SE: [93.28, 101.69, 103.11, 95.86, 100.36, 102.19, 103.41, 102.56, 102.41, 99.15]
           },
           pending_per_100: {
@@ -394,16 +614,16 @@
             SE: [0.6737, 0.6846, 0.6556, 0.5962, 0.6573, 0.6039, 0.6149, 0.578, 0.6428, 0.6983]
           },
           disposition_time_days: {
-            EL: [190.17, 468.87, 329.96, 610.23, 636.92, null, 727.66, 745.84, 770.80, 737.36],
-            IT: [492.95, 589.89, 532.20, 514.43, 532.32, 673.87, 559.57, 539.69, 511.16, 583.70],
-            RO: [216.62, 193.31, 145.60, 152.90, 152.47, 168.41, 150.21, 160.26, 217.95, 179.82],
-            SE: [187.35, 178.88, 156.70, 164.41, 166.78, 161.12, 147.93, 152.20, 156.61, 150.21]
+            EL: [190.1698, 468.8688, 329.9648, 610.2284, 636.9154, null, 727.6623, 745.837, 770.8021, 737.3564],
+            IT: [492.9464, 589.8887, 532.1981, 514.4323, 532.3216, 673.867, 559.5743, 539.69, 511.1625, 583.6976],
+            RO: [216.6158, 193.3112, 145.6039, 152.9009, 152.4724, 168.4089, 150.2115, 160.2565, 217.9526, 179.8183],
+            SE: [187.3465, 178.8783, 156.7025, 164.4061, 166.7838, 161.1205, 147.9259, 152.2019, 156.6084, 150.2095]
           },
           clearance_rate_pct: {
-            EL: [78.89, 57.69, 113.10, 99.08, 86.16, null, 82.37, 92.97, 91.89, 81.06],
+            EL: [78.89, 57.69, 113.1, 99.08, 86.16, null, 82.37, 92.97, 91.89, 81.06],
             IT: [118.14, 131.26, 119.29, 113.24, 104.49, 104.02, 109.08, 104.42, 110.02, 94.96],
             RO: [89.76, 98.98, 108.65, 102.02, 100.38, 100.09, 102.41, 96.26, 86.18, 99.17],
-            SE: [97.90, 98.83, 103.94, 99.25, 97.45, 102.84, 102.68, 101.63, 96.59, 97.77]
+            SE: [97.9, 98.83, 103.94, 99.25, 97.45, 102.84, 102.68, 101.63, 96.59, 97.77]
           },
           pending_per_100: {
             EL: [1.6566, 4.3231, 2.2756, 2.2514, 2.8932, null, 2.8421, 2.4909, 2.6655, 3.3711],
@@ -420,16 +640,16 @@
             SE: [1.1434, 1.0857, 1.0883, 1.4404, 1.7153, 1.8482, 1.703, 1.4487, 1.5121, 1.6422]
           },
           disposition_time_days: {
-            EL: [2003.33, 1519.52, null, 1085.76, null, 551.00, 595.42, 464.19, 438.69, 444.54],
-            IT: [1037.47, 886.12, 983.63, 924.51, 820.81, 862.05, 756.17, 573.54, 594.94, 482.91],
-            RO: [268.83, 271.74, 178.84, 169.87, 138.46, 689.83, 292.78, 320.94, 386.81, 410.27],
-            SE: [189.81, 126.48, 113.70, 115.09, 125.01, 106.62, 101.96, 107.00, 82.75, 81.42]
+            EL: [2003.3338, 1519.5202, null, 1085.7553, null, 551.0023, 595.4218, 464.1939, 438.6853, 444.5404],
+            IT: [1037.4677, 886.1205, 983.6255, 924.5089, 820.8066, 862.0532, 756.1684, 573.5389, 594.9435, 482.9125],
+            RO: [268.8301, 271.7357, 178.8415, 169.8681, 138.4595, 689.8294, 292.7782, 320.9373, 386.8134, 410.2654],
+            SE: [189.8067, 126.4797, 113.6999, 115.0932, 125.0051, 106.6248, 101.9624, 107.0026, 82.747, 81.4226]
           },
           clearance_rate_pct: {
             EL: [80.19, 143.22, null, 148.09, null, 162.81, 129.71, 127.01, 120.83, 111.82],
-            IT: [315.89, 279.78, 155.63, 153.46, 131.08, 136.39, 124.60, 133.62, 121.05, 125.06],
-            RO: [70.64, 78.09, 161.02, 91.76, 100.33, 48.40, 105.19, 96.64, 91.56, 90.87],
-            SE: [88.49, 104.80, 102.84, 93.87, 101.67, 102.28, 103.37, 103.42, 105.15, 99.66]
+            IT: [315.89, 279.78, 155.63, 153.46, 131.08, 136.39, 124.6, 133.62, 121.05, 125.06],
+            RO: [70.64, 78.09, 161.02, 91.76, 100.33, 48.4, 105.19, 96.64, 91.56, 90.87],
+            SE: [88.49, 104.8, 102.84, 93.87, 101.67, 102.28, 103.37, 103.42, 105.15, 99.66]
           },
           pending_per_100: {
             EL: [3.7308, 3.4658, null, 2.2033, null, 1.0355, 0.9262, 0.7936, 0.713, 0.657],
@@ -441,22 +661,22 @@
       },
       budget: {
         budget_eur_per_inhabitant: {
-          EL: [52.78, 57.09, 67.48, 50.92, 54.10, 55.42, 62.52, 62.40, 64.68, 61.84, 61.73, 69.49, 76.06],
-          IT: [85.38, 91.16, 88.92, 92.53, 91.01, 94.53, 96.73, 99.85, 98.24, 100.60, 106.59, 116.52, 131.65],
-          RO: [22.89, 29.75, 29.26, 28.92, 33.29, 46.37, 42.53, 47.53, 47.44, 55.11, 59.72, 74.96, 76.08],
-          SE: [123.77, 131.04, 125.56, 122.87, 126.85, 128.01, 122.32, 121.12, 121.70, 131.19, 128.34, 129.80, 137.05]
+          EL: [52.784, 57.0896, 67.4784, 50.9199, 54.1018, 55.4177, 62.5181, 62.3976, 64.6814, 61.8397, 61.725, 69.4909, 76.0591],
+          IT: [85.3779, 91.1599, 88.9247, 92.5293, 91.0086, 94.5297, 96.7313, 99.8508, 98.2353, 100.6034, 106.5854, 116.5227, 131.6546],
+          RO: [22.8899, 29.7521, 29.2579, 28.917, 33.2909, 46.3659, 42.5253, 47.5262, 47.4442, 55.1149, 59.7204, 74.955, 76.0841],
+          SE: [123.7701, 131.0369, 125.5604, 122.8715, 126.8529, 128.0094, 122.3219, 121.1214, 121.7001, 131.193, 128.3381, 129.7953, 137.0512]
         },
         budget_pct_gdp: {
-          EL: [0.314, 0.351, 0.417, 0.314, 0.334, 0.336, 0.372, 0.361, 0.413, 0.356, 0.315, 0.326, 0.338],
-          IT: [0.315, 0.339, 0.328, 0.335, 0.321, 0.325, 0.326, 0.331, 0.350, 0.323, 0.315, 0.321, 0.352],
-          RO: [0.330, 0.416, 0.387, 0.358, 0.392, 0.487, 0.405, 0.413, 0.416, 0.438, 0.405, 0.444, 0.410],
-          SE: [0.275, 0.286, 0.279, 0.266, 0.271, 0.271, 0.267, 0.263, 0.264, 0.256, 0.247, 0.257, 0.261]
+          EL: [0.3136, 0.3515, 0.4174, 0.3142, 0.3342, 0.336, 0.3715, 0.3613, 0.413, 0.3565, 0.3154, 0.3262, 0.3384],
+          IT: [0.3147, 0.3391, 0.3279, 0.3351, 0.3209, 0.3251, 0.3258, 0.3306, 0.3496, 0.3229, 0.3148, 0.3208, 0.3525],
+          RO: [0.3296, 0.4161, 0.3871, 0.3576, 0.3917, 0.4874, 0.4046, 0.4127, 0.4164, 0.4378, 0.4053, 0.4444, 0.4101],
+          SE: [0.2753, 0.286, 0.2795, 0.2662, 0.2711, 0.2711, 0.2672, 0.2627, 0.2635, 0.2559, 0.2469, 0.2571, 0.2606]
         }
       }
     };
 
     // =========================================================================
-    // 3. APPLICATION STATE & DATA NORMALIZATION
+    // 4. APPLICATION STATE & DATA NORMALIZATION
     // =========================================================================
     const state = {
       data: null,
@@ -465,18 +685,19 @@
       category: 'litigious_civil_commercial',
       metric: 'disposition_time_days',
       yearScope: 'v1', // 'v1' (2014-2024) | 'full' (2010-2024)
-      budgetAxis: 'budget_eur_per_inhabitant' // or 'budget_pct_gdp'
+      budgetAxis: 'budget_eur_per_inhabitant', // or 'budget_pct_gdp'
+      scatterYMetric: 'disposition_time_days' // or 'clearance_rate_pct'
     };
 
     let trajectoryChartInstance = null;
     let scatterChartInstance = null;
+    let readmeLoaded = false;
 
     /**
-     * Converts flat `eujs_clean.json` (generated by scripts/prepare_data.py)
-     * into the structured internal format used by the charts.
+     * Normalizes either flat `eujs_clean.json` (from scripts/prepare_data.py)
+     * or nested EMBEDDED_DATA into a unified internal structure.
      */
     function normalizeCleanJson(json) {
-      // If already in embedded format
       if (json.efficiency && json.budget && json.efficiencyYears) {
         return {
           dataset: json,
@@ -484,7 +705,6 @@
         };
       }
 
-      // Standard schema from scripts/prepare_data.py
       if (!Array.isArray(json.efficiency_records) || !Array.isArray(json.budget_records)) {
         throw new Error('JSON must contain efficiency_records and budget_records arrays.');
       }
@@ -544,12 +764,15 @@
     }
 
     // =========================================================================
-    // 4. CUSTOM CHART.JS PLUGINS (100% Benchmark Line & Scatter Point Labels)
+    // 5. CUSTOM CHART.JS PLUGINS (100% Threshold Line & Scatter Labels)
     // =========================================================================
     const crReferenceLinePlugin = {
       id: 'crReferenceLine',
       afterDatasetsDraw(chart) {
-        if (state.metric !== 'clearance_rate_pct') return;
+        const isLineCr = chart.canvas.id === 'trajectoryChart' && state.metric === 'clearance_rate_pct';
+        const isScatterCr = chart.canvas.id === 'scatterChart' && state.scatterYMetric === 'clearance_rate_pct';
+        if (!isLineCr && !isScatterCr) return;
+
         const { ctx, chartArea: { left, right, top, bottom }, scales: { y } } = chart;
         if (!y) return;
         const yPos = y.getPixelForValue(100);
@@ -564,22 +787,25 @@
         ctx.lineTo(right, yPos);
         ctx.stroke();
 
-        // Label badge
-        const label = '100% Benchmark (Backlog Reduction)';
+        const label = '100% Equilibrium Threshold';
         ctx.font = '600 11px Inter, sans-serif';
         const textWidth = ctx.measureText(label).width;
         const padX = 6;
         const boxW = textWidth + padX * 2;
         const boxH = 18;
         const boxX = right - boxW - 6;
-        const boxY = yPos - boxH - 4;
+        const boxY = Math.max(top + 2, yPos - boxH - 4);
 
         ctx.fillStyle = 'rgba(236, 253, 245, 0.95)';
         ctx.strokeStyle = '#10B981';
         ctx.setLineDash([]);
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(boxX, boxY, boxW, boxH, 4);
+        if (ctx.roundRect) {
+          ctx.roundRect(boxX, boxY, boxW, boxH, 4);
+        } else {
+          ctx.rect(boxX, boxY, boxW, boxH);
+        }
         ctx.fill();
         ctx.stroke();
 
@@ -592,7 +818,7 @@
     const scatterLabelPlugin = {
       id: 'scatterPointLabels',
       afterDatasetsDraw(chart) {
-        const { ctx } = chart;
+        const { ctx, scales: { x } } = chart;
         ctx.save();
         ctx.font = '700 12px Inter, sans-serif';
         ctx.textBaseline = 'middle';
@@ -604,7 +830,8 @@
             const point = dataset.data[idx];
             if (!point) return;
             ctx.fillStyle = dataset.borderColor || '#0F294A';
-            const offsetX = point.x > (chart.scales.x.max * 0.85) ? -28 : 11;
+            const nearRight = point.x > (x.min + (x.max - x.min) * 0.84);
+            const offsetX = nearRight ? -28 : 12;
             ctx.fillText(point.cc, element.x + offsetX, element.y - 2);
           });
         });
@@ -613,7 +840,75 @@
     };
 
     // =========================================================================
-    // 5. UI RENDERERS
+    // 6. DYNAMIC README MODAL LOGIC (OPTION 1)
+    // =========================================================================
+    const readmeModal = document.getElementById('readmeModal');
+    const readmeContent = document.getElementById('readmeContent');
+    const readmeStatusPill = document.getElementById('readmeStatusPill');
+
+    function renderMarkdownIntoModal(mdText) {
+      try {
+        if (window.marked && typeof window.marked.parse === 'function') {
+          readmeContent.innerHTML = window.marked.parse(mdText);
+        } else {
+          readmeContent.innerHTML = `<pre>${mdText.replace(/</g, '&lt;')}</pre>`;
+        }
+      } catch (_err) {
+        readmeContent.innerHTML = `<pre>${mdText.replace(/</g, '&lt;')}</pre>`;
+      }
+    }
+
+    async function openReadmeModal() {
+      readmeModal.classList.remove('hidden');
+      readmeModal.classList.add('flex');
+      document.body.style.overflow = 'hidden';
+
+      if (readmeLoaded) return;
+
+      readmeStatusPill.textContent = 'Fetching ./README.md...';
+      try {
+        const res = await fetch('./README.md', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const mdText = await res.text();
+        // Guard against servers returning an HTML 404 page with 200 status
+        if (!mdText.trim() || mdText.trim().startsWith('<!DOCTYPE html')) {
+          throw new Error('Non-Markdown response received');
+        }
+        renderMarkdownIntoModal(mdText);
+        readmeStatusPill.textContent = 'Live from ./README.md';
+        readmeStatusPill.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30';
+      } catch (_err) {
+        renderMarkdownIntoModal(FALLBACK_README_MD);
+        readmeStatusPill.textContent = 'Embedded Fallback (Local Preview)';
+        readmeStatusPill.className = 'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/30';
+      }
+      readmeLoaded = true;
+    }
+
+    function closeReadmeModal() {
+      readmeModal.classList.add('hidden');
+      readmeModal.classList.remove('flex');
+      document.body.style.overflow = '';
+    }
+
+    document.getElementById('openReadmeBtn').addEventListener('click', openReadmeModal);
+    document.getElementById('closeReadmeBtn').addEventListener('click', closeReadmeModal);
+    document.getElementById('closeReadmeFooterBtn').addEventListener('click', closeReadmeModal);
+
+    // Close on backdrop click
+    readmeModal.addEventListener('click', (e) => {
+      if (e.target === readmeModal) closeReadmeModal();
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !readmeModal.classList.contains('hidden')) {
+        closeReadmeModal();
+      }
+    });
+
+    // =========================================================================
+    // 7. DASHBOARD RENDERERS
     // =========================================================================
     function showToast(msg, isError = false) {
       const toast = document.getElementById('toast');
@@ -624,6 +919,11 @@
       toast.classList.remove('hidden');
       clearTimeout(window._toastTimer);
       window._toastTimer = setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    function getLatestValue(seriesArr) {
+      if (!Array.isArray(seriesArr) || seriesArr.length === 0) return null;
+      return seriesArr[seriesArr.length - 1];
     }
 
     function renderCountryChips() {
@@ -649,7 +949,7 @@
         `;
         btn.addEventListener('click', () => {
           if (isActive && state.activeCountries.length === 1) {
-            showToast('At least one Member State must remain active.', true);
+            showToast('At least one Member State must remain selected.', true);
             return;
           }
           if (isActive) {
@@ -661,11 +961,6 @@
         });
         container.appendChild(btn);
       });
-    }
-
-    function getLatestValue(seriesArr) {
-      if (!Array.isArray(seriesArr) || seriesArr.length === 0) return null;
-      return seriesArr[seriesArr.length - 1];
     }
 
     function renderKpiCards() {
@@ -704,7 +999,7 @@
             <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">2024</span>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 py-2 border-y border-slate-100">
+          <div class="grid grid-cols-2 gap-3 py-2.5 border-y border-slate-100">
             <div>
               <span class="block text-[11px] text-slate-500">Disposition Time</span>
               <span class="text-lg font-bold text-navy">${dt !== null ? dt.toFixed(1) : 'N/A'}</span>
@@ -714,7 +1009,7 @@
               <span class="block text-[11px] text-slate-500">Clearance Rate</span>
               <div class="mt-0.5">
                 <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold ${crBadgeClass}">
-                  ${cr !== null ? cr.toFixed(1) + '%' : 'N/A'}
+                  ${cr !== null ? cr.toFixed(2) + '%' : 'N/A'}
                 </span>
               </div>
             </div>
@@ -727,7 +1022,7 @@
               <span class="text-[10px] text-slate-400">/100</span>
             </div>
             <div class="text-right">
-              <span class="font-semibold text-navy">${budEur !== null ? '€' + budEur.toFixed(1) : 'N/A'}</span>
+              <span class="font-semibold text-navy">${budEur !== null ? '€' + budEur.toFixed(2) : 'N/A'}</span>
               <span class="text-slate-400 mx-0.5">&middot;</span>
               <span class="font-medium text-slate-600">${budGdp !== null ? budGdp.toFixed(2) + '%' : 'N/A'} GDP</span>
             </div>
@@ -822,13 +1117,20 @@
     function renderScatterChart() {
       const ds = state.data;
       const isEur = state.budgetAxis === 'budget_eur_per_inhabitant';
-      const xLabel = isEur ? '2024 Judicial Budget (EUR / inhabitant)' : '2024 Judicial Budget (% of GDP)';
-      document.getElementById('scatterSubtitle').textContent = `2024 Budget vs. Disposition Time (${CATEGORY_LABELS[state.category]})`;
+      const isDt = state.scatterYMetric === 'disposition_time_days';
+
+      const xLabel = isEur ? '2024 Court Budget (EUR per Inhabitant)' : '2024 Court Budget (% of GDP)';
+      const yLabel = isDt ? '2024 Disposition Time (days)' : '2024 Clearance Rate (%)';
+
+      document.getElementById('scatterSubtitle').textContent = `${isEur ? 'Budget (€/inhab.)' : 'Budget (% GDP)'} vs. 2024 ${isDt ? 'Disposition Time' : 'Clearance Rate'} (${CATEGORY_LABELS[state.category]})`;
+      document.getElementById('scatterFootnote').textContent = isDt
+        ? 'Lower Y-axis = faster case resolution • Source: CEPEJ & Eurostat COFOG99'
+        : '≥ 100% Clearance Rate = backlog reduction • Source: CEPEJ & Eurostat COFOG99';
 
       const datasets = state.activeCountries.map(cc => {
         const meta = COUNTRY_META[cc];
         const xVal = getLatestValue(ds.budget[state.budgetAxis][cc]);
-        const yVal = getLatestValue(ds.efficiency[state.category].disposition_time_days[cc]);
+        const yVal = getLatestValue(ds.efficiency[state.category][state.scatterYMetric][cc]);
         return {
           label: `${cc} (${meta.name})`,
           data: (xVal !== null && yVal !== null) ? [{ x: xVal, y: yVal, cc }] : [],
@@ -845,11 +1147,11 @@
       scatterChartInstance = new Chart(ctx, {
         type: 'scatter',
         data: { datasets },
-        plugins: [scatterLabelPlugin],
+        plugins: [crReferenceLinePlugin, scatterLabelPlugin],
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: { padding: { right: 20, top: 10 } },
+          layout: { padding: { right: 24, top: 10 } },
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -859,8 +1161,9 @@
               callbacks: {
                 label: (ctx) => {
                   const pt = ctx.raw;
-                  const xStr = isEur ? `€${pt.x.toFixed(2)} / inhab.` : `${pt.x.toFixed(3)}% of GDP`;
-                  return `${ctx.dataset.label}: ${xStr} | ${pt.y.toFixed(1)} days`;
+                  const xStr = isEur ? `€${pt.x.toFixed(2)} / inhab.` : `${pt.x.toFixed(2)}% of GDP`;
+                  const yStr = isDt ? `${pt.y.toFixed(1)} days` : `${pt.y.toFixed(2)}% CR`;
+                  return `${ctx.dataset.label}: ${xStr} | ${yStr}`;
                 }
               }
             }
@@ -873,9 +1176,11 @@
               suggestedMax: isEur ? 150 : 0.45
             },
             y: {
-              beginAtZero: true,
+              beginAtZero: isDt,
+              suggestedMin: isDt ? 0 : 75,
+              suggestedMax: isDt ? undefined : 130,
               grid: { color: '#E2E8F0' },
-              title: { display: true, text: '2024 Disposition Time (days)', font: { family: 'Inter', size: 11, weight: '600' }, color: '#64748B' }
+              title: { display: true, text: yLabel, font: { family: 'Inter', size: 11, weight: '600' }, color: '#64748B' }
             }
           }
         }
@@ -902,10 +1207,9 @@
         grid.appendChild(card);
       });
 
-      // Missing value audit table
       const count = state.missingLog.length;
-      document.getElementById('missingPill').textContent = `Missing Audit: ${count} NaNs in EL`;
-      document.getElementById('auditToggleTitle').textContent = `View Missing Value Audit (${count} cells)`;
+      document.getElementById('missingPill').textContent = `Audit: ${count} Missing Cells (EL)`;
+      document.getElementById('auditToggleTitle').textContent = `Missing Value Audit Table (${count} logged cells — all in EL)`;
 
       const tbody = document.getElementById('auditTableBody');
       tbody.innerHTML = state.missingLog.map(row => `
@@ -928,7 +1232,7 @@
     }
 
     // =========================================================================
-    // 6. EVENT LISTENERS & INITIALIZATION
+    // 8. FILTER & UPLOAD EVENT LISTENERS
     // =========================================================================
     document.getElementById('categorySelect').addEventListener('change', (e) => {
       state.category = e.target.value;
@@ -942,29 +1246,43 @@
 
     document.getElementById('btnScopeV1').addEventListener('click', () => {
       state.yearScope = 'v1';
-      document.getElementById('btnScopeV1').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm';
-      document.getElementById('btnScopeFull').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900';
+      document.getElementById('btnScopeV1').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm cursor-pointer';
+      document.getElementById('btnScopeFull').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
       renderTrajectoryChart();
     });
 
     document.getElementById('btnScopeFull').addEventListener('click', () => {
       state.yearScope = 'full';
-      document.getElementById('btnScopeFull').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm';
-      document.getElementById('btnScopeV1').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900';
+      document.getElementById('btnScopeFull').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm cursor-pointer';
+      document.getElementById('btnScopeV1').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
       renderTrajectoryChart();
     });
 
     document.getElementById('btnBudgetEur').addEventListener('click', () => {
       state.budgetAxis = 'budget_eur_per_inhabitant';
-      document.getElementById('btnBudgetEur').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm';
-      document.getElementById('btnBudgetGdp').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900';
+      document.getElementById('btnBudgetEur').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm cursor-pointer';
+      document.getElementById('btnBudgetGdp').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
       renderScatterChart();
     });
 
     document.getElementById('btnBudgetGdp').addEventListener('click', () => {
       state.budgetAxis = 'budget_pct_gdp';
-      document.getElementById('btnBudgetGdp').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm';
-      document.getElementById('btnBudgetEur').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900';
+      document.getElementById('btnBudgetGdp').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm cursor-pointer';
+      document.getElementById('btnBudgetEur').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
+      renderScatterChart();
+    });
+
+    document.getElementById('btnScatterDt').addEventListener('click', () => {
+      state.scatterYMetric = 'disposition_time_days';
+      document.getElementById('btnScatterDt').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-navy text-white shadow-sm cursor-pointer';
+      document.getElementById('btnScatterCr').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
+      renderScatterChart();
+    });
+
+    document.getElementById('btnScatterCr').addEventListener('click', () => {
+      state.scatterYMetric = 'clearance_rate_pct';
+      document.getElementById('btnScatterCr').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-navy text-white shadow-sm cursor-pointer';
+      document.getElementById('btnScatterDt').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
       renderScatterChart();
     });
 
@@ -986,7 +1304,7 @@
           const { dataset, missingLog } = normalizeCleanJson(parsed);
           state.data = dataset;
           state.missingLog = missingLog;
-          document.getElementById('dataSourceBadge').textContent = `Source: Custom (${file.name})`;
+          document.getElementById('dataSourceBadge').textContent = `Custom: ${file.name}`;
           renderAll();
           showToast(`Loaded custom dataset: ${file.name}`);
         } catch (err) {
@@ -997,22 +1315,22 @@
       e.target.value = '';
     });
 
-    // Bootstrap: Try fetching live GitHub Pages JSON first, fallback to EMBEDDED_DATA
+    // Bootstrap: Fetch live GitHub Pages processed JSON first, fallback to audited embedded dataset
     async function initApp() {
       const badge = document.getElementById('dataSourceBadge');
       try {
-        const res = await fetch('data/processed/eujs_clean.json', { cache: 'no-store' });
+        const res = await fetch('./data/processed/eujs_clean.json', { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const json = await res.json();
         const { dataset, missingLog } = normalizeCleanJson(json);
         state.data = dataset;
         state.missingLog = missingLog;
-        badge.textContent = 'Source: Live Repo JSON';
+        badge.textContent = 'Live: data/processed/eujs_clean.json';
       } catch (_err) {
         const { dataset, missingLog } = normalizeCleanJson(EMBEDDED_DATA);
         state.data = dataset;
         state.missingLog = missingLog;
-        badge.textContent = 'Source: Embedded 2026 EUJS';
+        badge.textContent = 'Embedded Audited Fallback';
       }
       renderAll();
     }
