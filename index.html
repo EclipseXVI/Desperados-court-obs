@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>European Court Performance Observatory — Team Desperados</title>
+
+  <!-- Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          colors: {
+            navy: '#0F294A',
+            eublue: '#003399',
+            eugold: '#D4AF37',
+            canvas: '#F4F6F9',
+          }
+        }
+      }
+    };
+  </script>
+
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+<body class="bg-canvas text-slate-800 font-sans antialiased min-h-screen flex flex-col">
+
+  <!-- Toast Notification (replaces alert/confirm) -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden max-w-sm rounded-xl bg-navy text-white px-4 py-3 shadow-xl border border-slate-700 text-sm flex items-center gap-3 transition-opacity duration-300">
+    <span id="toastIcon" class="text-eugold font-bold">●</span>
+    <span id="toastMessage"></span>
+  </div>
+
+  <!-- Top Navigation Bar -->
+  <header class="bg-navy text-white shadow-md border-b-4 border-eugold">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div class="flex items-start sm:items-center gap-3">
+        <!-- Institutional Emblem -->
+        <div class="w-10 h-10 rounded-lg bg-eublue border border-eugold/60 flex items-center justify-center shrink-0 shadow-inner">
+          <svg class="w-6 h-6 text-eugold" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m-7-7 3-7 3 7a3 3 0 0 1-6 0Zm14 0-3-7-3 7a3 3 0 0 0 6 0ZM5 7h14M8 21h8" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white leading-tight">
+            European Court Performance Observatory
+          </h1>
+          <p class="text-xs sm:text-sm text-slate-300 mt-0.5">
+            European Semester Policy Analyst Prototype &bull; Team Desperados
+          </p>
+        </div>
+      </div>
+
+      <!-- Metadata Pills & Custom JSON Loader -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/10 text-slate-100 border border-white/15">
+          Publication: 2026 EUJS
+        </span>
+        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/10 text-slate-100 border border-white/15">
+          Latest Obs: 2024
+        </span>
+        <span id="missingPill" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-200 border border-amber-400/30">
+          Missing Audit: 28 NaNs in EL
+        </span>
+        <span id="dataSourceBadge" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+          Source: Loading...
+        </span>
+
+        <label for="jsonUploadInput" class="cursor-pointer inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-eugold text-navy hover:bg-amber-400 transition-colors shadow-sm ml-1">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1m-4-8-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          Load Custom JSON
+          <input id="jsonUploadInput" type="file" accept=".json,application/json" class="hidden" />
+        </label>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Workspace -->
+  <main class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1">
+
+    <!-- Control Bar (Filters) -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 sm:p-5">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-4 items-end">
+
+        <!-- Country Toggle Chips -->
+        <div class="lg:col-span-4">
+          <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+            Member States (Min. 1 Active)
+          </span>
+          <div id="countryChips" class="flex flex-wrap gap-2">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Case Category Dropdown -->
+        <div class="lg:col-span-3">
+          <label for="categorySelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+            Case Category (1st Instance)
+          </label>
+          <select id="categorySelect" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-eublue focus:border-eublue">
+            <option value="litigious_civil_commercial" selected>Litigious Civil &amp; Commercial</option>
+            <option value="all_non_criminal">All Non-Criminal</option>
+            <option value="administrative">Administrative</option>
+          </select>
+        </div>
+
+        <!-- Primary Metric Dropdown -->
+        <div class="lg:col-span-3">
+          <label for="metricSelect" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+            Primary Trajectory Metric
+          </label>
+          <select id="metricSelect" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-eublue focus:border-eublue">
+            <option value="disposition_time_days" selected>Disposition Time (days)</option>
+            <option value="clearance_rate_pct">Clearance Rate (%)</option>
+            <option value="incoming_per_100">Incoming Caseload (per 100)</option>
+            <option value="pending_per_100">Pending Caseload (per 100)</option>
+          </select>
+        </div>
+
+        <!-- Year Range Toggle -->
+        <div class="lg:col-span-2">
+          <span class="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+            Observation Window
+          </span>
+          <div class="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200 w-full">
+            <button id="btnScopeV1" type="button" class="flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm">
+              2014–2024
+            </button>
+            <button id="btnScopeFull" type="button" class="flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900">
+              2010–2024
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- KPI Cards Row -->
+    <section aria-label="2024 Country KPIs">
+      <div id="kpiGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Populated by JS -->
+      </div>
+    </section>
+
+    <!-- Two-Column Charts Section -->
+    <section class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left (Wider): Historical Trajectory Line Chart -->
+      <div class="lg:col-span-7 bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex flex-col">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 mb-4">
+          <div>
+            <h2 id="lineChartTitle" class="text-base font-bold text-navy">
+              Historical Trajectory — Disposition Time (days)
+            </h2>
+            <p id="lineChartSubtitle" class="text-xs text-slate-500 mt-0.5">
+              Litigious Civil &amp; Commercial &bull; Gaps indicate missing CEPEJ observations (not interpolated)
+            </p>
+          </div>
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-600 border border-slate-200 self-start">
+            spanGaps: false
+          </span>
+        </div>
+        <div class="relative w-full h-80 sm:h-96">
+          <canvas id="trajectoryChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Right: Budget Effectiveness Scatter Plot -->
+      <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 flex flex-col">
+        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
+          <div>
+            <h2 class="text-base font-bold text-navy">
+              Budget Effectiveness (2024)
+            </h2>
+            <p id="scatterSubtitle" class="text-xs text-slate-500 mt-0.5">
+              Judicial Budget vs. Disposition Time (Litigious Civil &amp; Comm.)
+            </p>
+          </div>
+          <!-- Budget X-Axis Toggle -->
+          <div class="inline-flex rounded-lg bg-slate-100 p-0.5 border border-slate-200 shrink-0 self-start">
+            <button id="btnBudgetEur" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm">
+              €/inhab.
+            </button>
+            <button id="btnBudgetGdp" type="button" class="px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900">
+              % GDP
+            </button>
+          </div>
+        </div>
+        <div class="relative w-full h-80 sm:h-96">
+          <canvas id="scatterChart"></canvas>
+        </div>
+        <p class="text-[11px] text-slate-400 mt-2 text-right">
+          Lower Y-axis = faster resolution &bull; Source: CEPEJ &amp; Eurostat (COFOG99 Law Courts)
+        </p>
+      </div>
+
+    </section>
+
+    <!-- Embedded Data Hygiene & Country Caveats Section -->
+    <section class="bg-white rounded-xl shadow-sm border border-slate-200/80 p-5 space-y-5">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-100 pb-3">
+        <div>
+          <h2 class="text-base font-bold text-navy flex items-center gap-2">
+            <svg class="w-4 h-4 text-eugold" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495ZM10 5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 10 5Zm0 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+            </svg>
+            Data Hygiene &amp; Country Caveats
+          </h2>
+          <p class="text-xs text-slate-500 mt-0.5">
+            Documented CEPEJ / EU Justice Scoreboard methodology breaks, denominator quirks, and structural notes for active countries.
+          </p>
+        </div>
+        <span class="text-xs font-medium text-slate-500">
+          Observation Year &ne; Publication Year (2024 data in 2026 edition)
+        </span>
+      </div>
+
+      <!-- Country Caveat Cards -->
+      <div id="caveatsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Populated by JS -->
+      </div>
+
+      <!-- Collapsible Missing Value Audit Table -->
+      <div class="border border-slate-200 rounded-xl overflow-hidden">
+        <button id="toggleAuditBtn" type="button" class="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors text-left">
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-amber-100 text-amber-800 text-xs font-bold">!</span>
+            <span id="auditToggleTitle" class="text-sm font-semibold text-navy">
+              View Missing Value Audit (28 cells)
+            </span>
+          </div>
+          <svg id="auditChevron" class="w-4 h-4 text-slate-500 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7" />
+          </svg>
+        </button>
+
+        <div id="auditTableContainer" class="hidden border-t border-slate-200 max-h-72 overflow-y-auto">
+          <table class="min-w-full divide-y divide-slate-200 text-xs">
+            <thead class="bg-slate-50 sticky top-0">
+              <tr>
+                <th class="px-4 py-2.5 text-left font-semibold text-slate-600 uppercase tracking-wider">Country</th>
+                <th class="px-4 py-2.5 text-left font-semibold text-slate-600 uppercase tracking-wider">Obs. Year</th>
+                <th class="px-4 py-2.5 text-left font-semibold text-slate-600 uppercase tracking-wider">Case Category</th>
+                <th class="px-4 py-2.5 text-left font-semibold text-slate-600 uppercase tracking-wider">Metric</th>
+                <th class="px-4 py-2.5 text-left font-semibold text-slate-600 uppercase tracking-wider">Source Sheet</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody" class="divide-y divide-slate-100 bg-white">
+              <!-- Populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <span>European Court Performance Observatory (v1) &bull; MSc Data Science for Business</span>
+      <span>Data: 2026 EU Justice Scoreboard (CEPEJ-STAT &amp; Eurostat) &bull; Zero Synthetic Data</span>
+    </div>
+  </footer>
+
+  <script>
+    // =========================================================================
+    // 1. CONSTANTS, COLOR PALETTE & METADATA
+    // =========================================================================
+    const COUNTRY_META = {
+      EL: {
+        name: 'Greece',
+        color: '#0052CC',
+        bgTint: 'rgba(0, 82, 204, 0.10)',
+        fundingTier: 'Moderate-to-Low per Capita / Major RRF Reformer',
+        caveats: [
+          'Methodology break (*) flagged in CEPEJ/EUJS series across civil/commercial and administrative figures.',
+          'Missing observations (NaN) in 2014, 2016, 2019, 2020 for All Non-Criminal; 2014 & 2019 for Administrative; and 2020 for Litigious Civil & Commercial.'
+        ]
+      },
+      IT: {
+        name: 'Italy',
+        color: '#0D9488',
+        bgTint: 'rgba(13, 148, 136, 0.10)',
+        fundingTier: 'High per Capita / Major RRF Reformer',
+        caveats: [
+          '2020 COVID-19 court suspension spike visible in Disposition Time (673.87 days in Litigious Civil & Commercial).',
+          'High non-litigious civil volume inflates All Non-Criminal incoming caseload (5.55 per 100 in 2024 vs. 2.33 Litigious).'
+        ]
+      },
+      RO: {
+        name: 'Romania',
+        color: '#D97706',
+        bgTint: 'rgba(217, 119, 6, 0.10)',
+        fundingTier: 'Low per Capita / High % of GDP Effort',
+        caveats: [
+          'Highest incoming litigious civil & commercial caseload among peers (8.42 per 100 inhabitants in 2024), yet maintains low disposition time (179.82 days).',
+          'Highest judicial expenditure as % of GDP (0.410% in 2024) despite lower EUR per inhabitant (76.08 EUR) due to GDP denominator.'
+        ]
+      },
+      SE: {
+        name: 'Sweden',
+        color: '#6366F1',
+        bgTint: 'rgba(99, 102, 241, 0.10)',
+        fundingTier: 'High per Capita / Lean Budget Share of GDP',
+        caveats: [
+          'Administrative incoming caseload (1.64 per 100 in 2024) is over double its litigious civil & commercial caseload (0.70 per 100), reflecting Sweden’s broad administrative court remit (tax, social insurance, migration).'
+        ]
+      }
+    };
+
+    const CATEGORY_LABELS = {
+      litigious_civil_commercial: 'Litigious Civil & Commercial',
+      all_non_criminal: 'All Non-Criminal',
+      administrative: 'Administrative'
+    };
+
+    const METRIC_META = {
+      disposition_time_days: { label: 'Disposition Time (days)', unit: 'days', decimals: 1 },
+      clearance_rate_pct: { label: 'Clearance Rate (%)', unit: '%', decimals: 2 },
+      incoming_per_100: { label: 'Incoming Caseload (per 100)', unit: 'cases / 100 inhab.', decimals: 2 },
+      pending_per_100: { label: 'Pending Caseload (per 100)', unit: 'cases / 100 inhab.', decimals: 2 }
+    };
+
+    const SHEET_MAP = {
+      all_non_criminal: {
+        incoming_per_100: 'Fig(1)Incoming.Non-crim',
+        disposition_time_days: 'Fig(4)DT.Non-criminal',
+        clearance_rate_pct: 'Fig(9)CR.Non-criminal',
+        pending_per_100: 'Fig(12)Pending.Non-crim'
+      },
+      litigious_civil_commercial: {
+        incoming_per_100: 'Fig(2)Incoming.Lit.civ&comm',
+        disposition_time_days: 'Fig(5)DT.Lit.civ&comm',
+        clearance_rate_pct: 'Fig(10)CR.Lit.civ&comm',
+        pending_per_100: 'Fig(13)Pending.Lit.civ&comm'
+      },
+      administrative: {
+        incoming_per_100: 'Fig(3)Incoming.Admin',
+        disposition_time_days: 'Fig(7)DT.Admin',
+        clearance_rate_pct: 'Fig(11)CR.Admin',
+        pending_per_100: 'Fig(14)Pending.Admin'
+      }
+    };
+
+    // =========================================================================
+    // 2. EXACT AUDITED EMBEDDED DATASET (2026 EUJS — NO SYNTHETIC NUMBERS)
+    // =========================================================================
+    const EMBEDDED_DATA = {
+      efficiencyYears: [2010, 2012, 2014, 2016, 2019, 2020, 2021, 2022, 2023, 2024],
+      budgetYears: [2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
+      efficiency: {
+        all_non_criminal: {
+          incoming_per_100: {
+            EL: [4.878, 6.4149, null, null, null, null, 2.4323, 2.0098, 2.1069, 2.9055],
+            IT: [6.8766, 6.7196, 6.5787, 6.0368, 5.7154, 4.5084, 5.121, 5.225, 5.0796, 5.5494],
+            RO: [8.1707, 8.6261, 7.3279, 7.5259, 7.2659, 6.6842, 6.9758, 7.5915, 8.4711, 9.0748],
+            SE: [2.0874, 2.0662, 2.0308, 2.3194, 2.6589, 2.7409, 2.5738, 2.2816, 2.4025, 2.5925]
+          },
+          disposition_time_days: {
+            EL: [509.52, 677.23, null, null, null, null, 663.70, 633.71, 642.25, 637.83],
+            IT: [395.09, 390.56, 376.52, 386.80, 367.20, 471.46, 380.97, 358.23, 347.33, 372.72],
+            RO: [156.01, 161.50, 148.25, 153.86, 151.73, 185.54, 160.40, 171.39, 227.62, 192.21],
+            SE: [184.79, 148.88, 133.06, 133.02, 138.35, 123.35, 116.99, 123.12, 108.24, 106.41]
+          },
+          clearance_rate_pct: {
+            EL: [79.12, 65.44, null, null, null, null, 91.18, 100.60, 98.18, 87.11],
+            IT: [108.89, 108.37, 109.35, 104.51, 103.30, 102.61, 106.82, 105.52, 106.24, 96.91],
+            RO: [91.40, 95.67, 111.12, 101.28, 100.24, 96.69, 102.44, 96.18, 86.50, 98.54],
+            SE: [93.28, 101.69, 103.11, 95.86, 100.36, 102.19, 103.41, 102.56, 102.41, 99.15]
+          },
+          pending_per_100: {
+            EL: [5.3874, 7.7889, null, null, null, null, 4.0324, 3.5104, 3.6397, 4.4229],
+            IT: [8.105, 7.7918, 7.4208, 6.686, 5.9396, 5.9751, 5.7096, 5.411, 5.1353, 5.4917],
+            RO: [3.1923, 3.6517, 3.3072, 3.213, 3.0277, 3.2852, 3.1405, 3.4284, 4.5697, 4.709],
+            SE: [0.9858, 0.857, 0.7633, 0.8103, 1.0115, 0.9465, 0.853, 0.7893, 0.7296, 0.7493]
+          }
+        },
+        litigious_civil_commercial: {
+          incoming_per_100: {
+            EL: [4.0304, 5.8336, 2.2257, 1.3592, 1.9244, null, 1.7307, 1.3111, 1.3736, 2.0586],
+            IT: [3.9579, 2.6133, 2.6083, 2.5662, 2.4387, 1.9224, 2.1298, 2.2313, 2.1539, 2.3302],
+            RO: [5.0098, 5.1756, 6.8516, 6.8005, 6.6777, 6.1229, 6.3963, 6.9926, 7.847, 8.4192],
+            SE: [0.6737, 0.6846, 0.6556, 0.5962, 0.6573, 0.6039, 0.6149, 0.578, 0.6428, 0.6983]
+          },
+          disposition_time_days: {
+            EL: [190.17, 468.87, 329.96, 610.23, 636.92, null, 727.66, 745.84, 770.80, 737.36],
+            IT: [492.95, 589.89, 532.20, 514.43, 532.32, 673.87, 559.57, 539.69, 511.16, 583.70],
+            RO: [216.62, 193.31, 145.60, 152.90, 152.47, 168.41, 150.21, 160.26, 217.95, 179.82],
+            SE: [187.35, 178.88, 156.70, 164.41, 166.78, 161.12, 147.93, 152.20, 156.61, 150.21]
+          },
+          clearance_rate_pct: {
+            EL: [78.89, 57.69, 113.10, 99.08, 86.16, null, 82.37, 92.97, 91.89, 81.06],
+            IT: [118.14, 131.26, 119.29, 113.24, 104.49, 104.02, 109.08, 104.42, 110.02, 94.96],
+            RO: [89.76, 98.98, 108.65, 102.02, 100.38, 100.09, 102.41, 96.26, 86.18, 99.17],
+            SE: [97.90, 98.83, 103.94, 99.25, 97.45, 102.84, 102.68, 101.63, 96.59, 97.77]
+          },
+          pending_per_100: {
+            EL: [1.6566, 4.3231, 2.2756, 2.2514, 2.8932, null, 2.8421, 2.4909, 2.6655, 3.3711],
+            IT: [6.3151, 5.5436, 4.5367, 4.0956, 3.7163, 3.6918, 3.5618, 3.4451, 3.3186, 3.5388],
+            RO: [2.6688, 2.7132, 2.9697, 2.9063, 2.8001, 2.8277, 2.6957, 2.9553, 4.038, 4.1135],
+            SE: [0.3385, 0.3316, 0.2926, 0.2665, 0.2927, 0.2741, 0.2559, 0.245, 0.2664, 0.2809]
+          }
+        },
+        administrative: {
+          incoming_per_100: {
+            EL: [0.8477, 0.5813, null, 0.5001, null, 0.4213, 0.4377, 0.4913, 0.491, 0.4824],
+            IT: [0.0935, 0.0861, 0.1048, 0.0901, 0.0844, 0.071, 0.0816, 0.0876, 0.0853, 0.0891],
+            RO: [0.4697, 1.0778, 0.3518, 0.5976, 0.4263, 0.4119, 0.4239, 0.438, 0.4198, 0.4386],
+            SE: [1.1434, 1.0857, 1.0883, 1.4404, 1.7153, 1.8482, 1.703, 1.4487, 1.5121, 1.6422]
+          },
+          disposition_time_days: {
+            EL: [2003.33, 1519.52, null, 1085.76, null, 551.00, 595.42, 464.19, 438.69, 444.54],
+            IT: [1037.47, 886.12, 983.63, 924.51, 820.81, 862.05, 756.17, 573.54, 594.94, 482.91],
+            RO: [268.83, 271.74, 178.84, 169.87, 138.46, 689.83, 292.78, 320.94, 386.81, 410.27],
+            SE: [189.81, 126.48, 113.70, 115.09, 125.01, 106.62, 101.96, 107.00, 82.75, 81.42]
+          },
+          clearance_rate_pct: {
+            EL: [80.19, 143.22, null, 148.09, null, 162.81, 129.71, 127.01, 120.83, 111.82],
+            IT: [315.89, 279.78, 155.63, 153.46, 131.08, 136.39, 124.60, 133.62, 121.05, 125.06],
+            RO: [70.64, 78.09, 161.02, 91.76, 100.33, 48.40, 105.19, 96.64, 91.56, 90.87],
+            SE: [88.49, 104.80, 102.84, 93.87, 101.67, 102.28, 103.37, 103.42, 105.15, 99.66]
+          },
+          pending_per_100: {
+            EL: [3.7308, 3.4658, null, 2.2033, null, 1.0355, 0.9262, 0.7936, 0.713, 0.657],
+            IT: [0.84, 0.5846, 0.4396, 0.3501, 0.2489, 0.2286, 0.2106, 0.184, 0.1683, 0.1474],
+            RO: [0.2444, 0.6265, 0.2776, 0.2552, 0.1623, 0.3767, 0.3577, 0.3721, 0.4073, 0.448],
+            SE: [0.5261, 0.3943, 0.3487, 0.4264, 0.5973, 0.5522, 0.4918, 0.4392, 0.3604, 0.3651]
+          }
+        }
+      },
+      budget: {
+        budget_eur_per_inhabitant: {
+          EL: [52.78, 57.09, 67.48, 50.92, 54.10, 55.42, 62.52, 62.40, 64.68, 61.84, 61.73, 69.49, 76.06],
+          IT: [85.38, 91.16, 88.92, 92.53, 91.01, 94.53, 96.73, 99.85, 98.24, 100.60, 106.59, 116.52, 131.65],
+          RO: [22.89, 29.75, 29.26, 28.92, 33.29, 46.37, 42.53, 47.53, 47.44, 55.11, 59.72, 74.96, 76.08],
+          SE: [123.77, 131.04, 125.56, 122.87, 126.85, 128.01, 122.32, 121.12, 121.70, 131.19, 128.34, 129.80, 137.05]
+        },
+        budget_pct_gdp: {
+          EL: [0.314, 0.351, 0.417, 0.314, 0.334, 0.336, 0.372, 0.361, 0.413, 0.356, 0.315, 0.326, 0.338],
+          IT: [0.315, 0.339, 0.328, 0.335, 0.321, 0.325, 0.326, 0.331, 0.350, 0.323, 0.315, 0.321, 0.352],
+          RO: [0.330, 0.416, 0.387, 0.358, 0.392, 0.487, 0.405, 0.413, 0.416, 0.438, 0.405, 0.444, 0.410],
+          SE: [0.275, 0.286, 0.279, 0.266, 0.271, 0.271, 0.267, 0.263, 0.264, 0.256, 0.247, 0.257, 0.261]
+        }
+      }
+    };
+
+    // =========================================================================
+    // 3. APPLICATION STATE & DATA NORMALIZATION
+    // =========================================================================
+    const state = {
+      data: null,
+      missingLog: [],
+      activeCountries: ['EL', 'IT', 'RO', 'SE'],
+      category: 'litigious_civil_commercial',
+      metric: 'disposition_time_days',
+      yearScope: 'v1', // 'v1' (2014-2024) | 'full' (2010-2024)
+      budgetAxis: 'budget_eur_per_inhabitant' // or 'budget_pct_gdp'
+    };
+
+    let trajectoryChartInstance = null;
+    let scatterChartInstance = null;
+
+    /**
+     * Converts flat `eujs_clean.json` (generated by scripts/prepare_data.py)
+     * into the structured internal format used by the charts.
+     */
+    function normalizeCleanJson(json) {
+      // If already in embedded format
+      if (json.efficiency && json.budget && json.efficiencyYears) {
+        return {
+          dataset: json,
+          missingLog: buildMissingLogFromNested(json)
+        };
+      }
+
+      // Standard schema from scripts/prepare_data.py
+      if (!Array.isArray(json.efficiency_records) || !Array.isArray(json.budget_records)) {
+        throw new Error('JSON must contain efficiency_records and budget_records arrays.');
+      }
+
+      const effYears = Array.from(new Set(json.efficiency_records.map(r => Number(r.observation_year)))).sort((a, b) => a - b);
+      const budYears = Array.from(new Set(json.budget_records.map(r => Number(r.observation_year)))).sort((a, b) => a - b);
+
+      const efficiency = {};
+      for (const rec of json.efficiency_records) {
+        const { category, metric, country_code: cc, observation_year: yr, value } = rec;
+        if (!efficiency[category]) efficiency[category] = {};
+        if (!efficiency[category][metric]) efficiency[category][metric] = {};
+        if (!efficiency[category][metric][cc]) efficiency[category][metric][cc] = new Array(effYears.length).fill(null);
+        const idx = effYears.indexOf(Number(yr));
+        if (idx !== -1) efficiency[category][metric][cc][idx] = value;
+      }
+
+      const budget = {};
+      for (const rec of json.budget_records) {
+        const { metric, country_code: cc, observation_year: yr, value } = rec;
+        if (!budget[metric]) budget[metric] = {};
+        if (!budget[metric][cc]) budget[metric][cc] = new Array(budYears.length).fill(null);
+        const idx = budYears.indexOf(Number(yr));
+        if (idx !== -1) budget[metric][cc][idx] = value;
+      }
+
+      const missingLog = Array.isArray(json.metadata?.missing_value_log)
+        ? json.metadata.missing_value_log
+        : buildMissingLogFromNested({ efficiencyYears: effYears, efficiency });
+
+      return {
+        dataset: { efficiencyYears: effYears, budgetYears: budYears, efficiency, budget },
+        missingLog
+      };
+    }
+
+    function buildMissingLogFromNested(ds) {
+      const log = [];
+      for (const [category, metrics] of Object.entries(ds.efficiency)) {
+        for (const [metric, countries] of Object.entries(metrics)) {
+          for (const [cc, arr] of Object.entries(countries)) {
+            arr.forEach((val, i) => {
+              if (val === null || val === undefined || Number.isNaN(val)) {
+                log.push({
+                  country_code: cc,
+                  observation_year: ds.efficiencyYears[i],
+                  category,
+                  metric,
+                  sheet: SHEET_MAP[category]?.[metric] || 'EUJS'
+                });
+              }
+            });
+          }
+        }
+      }
+      return log;
+    }
+
+    // =========================================================================
+    // 4. CUSTOM CHART.JS PLUGINS (100% Benchmark Line & Scatter Point Labels)
+    // =========================================================================
+    const crReferenceLinePlugin = {
+      id: 'crReferenceLine',
+      afterDatasetsDraw(chart) {
+        if (state.metric !== 'clearance_rate_pct') return;
+        const { ctx, chartArea: { left, right, top, bottom }, scales: { y } } = chart;
+        if (!y) return;
+        const yPos = y.getPixelForValue(100);
+        if (yPos < top || yPos > bottom) return;
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = '#059669';
+        ctx.lineWidth = 1.75;
+        ctx.moveTo(left, yPos);
+        ctx.lineTo(right, yPos);
+        ctx.stroke();
+
+        // Label badge
+        const label = '100% Benchmark (Backlog Reduction)';
+        ctx.font = '600 11px Inter, sans-serif';
+        const textWidth = ctx.measureText(label).width;
+        const padX = 6;
+        const boxW = textWidth + padX * 2;
+        const boxH = 18;
+        const boxX = right - boxW - 6;
+        const boxY = yPos - boxH - 4;
+
+        ctx.fillStyle = 'rgba(236, 253, 245, 0.95)';
+        ctx.strokeStyle = '#10B981';
+        ctx.setLineDash([]);
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(boxX, boxY, boxW, boxH, 4);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#047857';
+        ctx.fillText(label, boxX + padX, boxY + 12.5);
+        ctx.restore();
+      }
+    };
+
+    const scatterLabelPlugin = {
+      id: 'scatterPointLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        ctx.save();
+        ctx.font = '700 12px Inter, sans-serif';
+        ctx.textBaseline = 'middle';
+
+        chart.data.datasets.forEach((dataset, dsIdx) => {
+          const meta = chart.getDatasetMeta(dsIdx);
+          if (meta.hidden) return;
+          meta.data.forEach((element, idx) => {
+            const point = dataset.data[idx];
+            if (!point) return;
+            ctx.fillStyle = dataset.borderColor || '#0F294A';
+            const offsetX = point.x > (chart.scales.x.max * 0.85) ? -28 : 11;
+            ctx.fillText(point.cc, element.x + offsetX, element.y - 2);
+          });
+        });
+        ctx.restore();
+      }
+    };
+
+    // =========================================================================
+    // 5. UI RENDERERS
+    // =========================================================================
+    function showToast(msg, isError = false) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      const text = document.getElementById('toastMessage');
+      icon.className = isError ? 'text-rose-400 font-bold' : 'text-eugold font-bold';
+      text.textContent = msg;
+      toast.classList.remove('hidden');
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => toast.classList.add('hidden'), 4000);
+    }
+
+    function renderCountryChips() {
+      const container = document.getElementById('countryChips');
+      container.innerHTML = '';
+      ['EL', 'IT', 'RO', 'SE'].forEach(cc => {
+        const meta = COUNTRY_META[cc];
+        const isActive = state.activeCountries.includes(cc);
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
+          isActive
+            ? 'bg-white text-slate-900 shadow-sm'
+            : 'bg-slate-100 text-slate-400 border-slate-200 hover:text-slate-600'
+        }`;
+        if (isActive) {
+          btn.style.borderColor = meta.color;
+          btn.style.boxShadow = `inset 3px 0 0 ${meta.color}`;
+        }
+        btn.innerHTML = `
+          <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${isActive ? meta.color : '#CBD5E1'}"></span>
+          <span>${cc} &middot; ${meta.name}</span>
+        `;
+        btn.addEventListener('click', () => {
+          if (isActive && state.activeCountries.length === 1) {
+            showToast('At least one Member State must remain active.', true);
+            return;
+          }
+          if (isActive) {
+            state.activeCountries = state.activeCountries.filter(c => c !== cc);
+          } else {
+            state.activeCountries = ['EL', 'IT', 'RO', 'SE'].filter(c => state.activeCountries.includes(c) || c === cc);
+          }
+          renderAll();
+        });
+        container.appendChild(btn);
+      });
+    }
+
+    function getLatestValue(seriesArr) {
+      if (!Array.isArray(seriesArr) || seriesArr.length === 0) return null;
+      return seriesArr[seriesArr.length - 1];
+    }
+
+    function renderKpiCards() {
+      const grid = document.getElementById('kpiGrid');
+      grid.innerHTML = '';
+      const ds = state.data;
+      const catData = ds.efficiency[state.category];
+
+      state.activeCountries.forEach(cc => {
+        const meta = COUNTRY_META[cc];
+        const dt = getLatestValue(catData.disposition_time_days[cc]);
+        const cr = getLatestValue(catData.clearance_rate_pct[cc]);
+        const inc = getLatestValue(catData.incoming_per_100[cc]);
+        const budEur = getLatestValue(ds.budget.budget_eur_per_inhabitant[cc]);
+        const budGdp = getLatestValue(ds.budget.budget_pct_gdp[cc]);
+
+        const crGood = cr !== null && cr >= 100;
+        const crBadgeClass = cr === null
+          ? 'bg-slate-100 text-slate-500'
+          : crGood
+            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+            : 'bg-amber-50 text-amber-800 border border-amber-200';
+
+        const card = document.createElement('div');
+        card.className = 'bg-white rounded-xl shadow-sm border border-slate-200/80 p-4 flex flex-col justify-between transition-shadow hover:shadow-md';
+        card.style.borderTop = `4px solid ${meta.color}`;
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-2 mb-3">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold px-1.5 py-0.5 rounded text-white" style="background:${meta.color}">${cc}</span>
+                <h3 class="text-sm font-bold text-navy">${meta.name}</h3>
+              </div>
+              <p class="text-[11px] text-slate-500 mt-1 leading-snug">${meta.fundingTier}</p>
+            </div>
+            <span class="text-[10px] font-semibold uppercase tracking-wide text-slate-400">2024</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3 py-2 border-y border-slate-100">
+            <div>
+              <span class="block text-[11px] text-slate-500">Disposition Time</span>
+              <span class="text-lg font-bold text-navy">${dt !== null ? dt.toFixed(1) : 'N/A'}</span>
+              <span class="text-[11px] text-slate-400">days</span>
+            </div>
+            <div>
+              <span class="block text-[11px] text-slate-500">Clearance Rate</span>
+              <div class="mt-0.5">
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold ${crBadgeClass}">
+                  ${cr !== null ? cr.toFixed(1) + '%' : 'N/A'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-3 flex items-center justify-between text-xs">
+            <div>
+              <span class="text-slate-500">Incoming:</span>
+              <span class="font-semibold text-slate-800 ml-1">${inc !== null ? inc.toFixed(2) : 'N/A'}</span>
+              <span class="text-[10px] text-slate-400">/100</span>
+            </div>
+            <div class="text-right">
+              <span class="font-semibold text-navy">${budEur !== null ? '€' + budEur.toFixed(1) : 'N/A'}</span>
+              <span class="text-slate-400 mx-0.5">&middot;</span>
+              <span class="font-medium text-slate-600">${budGdp !== null ? budGdp.toFixed(2) + '%' : 'N/A'} GDP</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function renderTrajectoryChart() {
+      const ds = state.data;
+      const startYear = state.yearScope === 'v1' ? 2014 : 2010;
+      const yearIndices = [];
+      const labels = [];
+      ds.efficiencyYears.forEach((yr, i) => {
+        if (yr >= startYear) {
+          yearIndices.push(i);
+          labels.push(String(yr));
+        }
+      });
+
+      const metricInfo = METRIC_META[state.metric];
+      document.getElementById('lineChartTitle').textContent = `Historical Trajectory — ${metricInfo.label}`;
+      document.getElementById('lineChartSubtitle').textContent = `${CATEGORY_LABELS[state.category]} • Observation years ${labels[0]}–${labels[labels.length - 1]} • Gaps = missing CEPEJ data`;
+
+      const datasets = state.activeCountries.map(cc => {
+        const meta = COUNTRY_META[cc];
+        const rawArr = ds.efficiency[state.category][state.metric][cc] || [];
+        const sliced = yearIndices.map(i => rawArr[i] ?? null);
+        return {
+          label: `${cc} (${meta.name})`,
+          data: sliced,
+          borderColor: meta.color,
+          backgroundColor: meta.color,
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBackgroundColor: '#FFFFFF',
+          pointBorderWidth: 2.5,
+          tension: 0.15,
+          spanGaps: false
+        };
+      });
+
+      const ctx = document.getElementById('trajectoryChart').getContext('2d');
+      if (trajectoryChartInstance) trajectoryChartInstance.destroy();
+
+      trajectoryChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { labels, datasets },
+        plugins: [crReferenceLinePlugin],
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { usePointStyle: true, boxWidth: 8, padding: 16, font: { family: 'Inter', size: 12, weight: '500' } }
+            },
+            tooltip: {
+              backgroundColor: '#0F294A',
+              titleFont: { family: 'Inter', size: 12, weight: '700' },
+              bodyFont: { family: 'Inter', size: 12 },
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                title: (items) => `Observation Year: ${items[0].label}`,
+                label: (ctx) => {
+                  const v = ctx.parsed.y;
+                  if (v === null || v === undefined) return ` ${ctx.dataset.label}: Missing (NaN)`;
+                  return ` ${ctx.dataset.label}: ${v.toFixed(metricInfo.decimals)} ${metricInfo.unit}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              title: { display: true, text: 'Observation Year', font: { family: 'Inter', size: 11, weight: '600' }, color: '#64748B' }
+            },
+            y: {
+              beginAtZero: state.metric !== 'clearance_rate_pct',
+              grid: { color: '#E2E8F0' },
+              title: { display: true, text: metricInfo.label, font: { family: 'Inter', size: 11, weight: '600' }, color: '#64748B' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderScatterChart() {
+      const ds = state.data;
+      const isEur = state.budgetAxis === 'budget_eur_per_inhabitant';
+      const xLabel = isEur ? '2024 Judicial Budget (EUR / inhabitant)' : '2024 Judicial Budget (% of GDP)';
+      document.getElementById('scatterSubtitle').textContent = `2024 Budget vs. Disposition Time (${CATEGORY_LABELS[state.category]})`;
+
+      const datasets = state.activeCountries.map(cc => {
+        const meta = COUNTRY_META[cc];
+        const xVal = getLatestValue(ds.budget[state.budgetAxis][cc]);
+        const yVal = getLatestValue(ds.efficiency[state.category].disposition_time_days[cc]);
+        return {
+          label: `${cc} (${meta.name})`,
+          data: (xVal !== null && yVal !== null) ? [{ x: xVal, y: yVal, cc }] : [],
+          backgroundColor: meta.color,
+          borderColor: meta.color,
+          pointRadius: 8,
+          pointHoverRadius: 10
+        };
+      });
+
+      const ctx = document.getElementById('scatterChart').getContext('2d');
+      if (scatterChartInstance) scatterChartInstance.destroy();
+
+      scatterChartInstance = new Chart(ctx, {
+        type: 'scatter',
+        data: { datasets },
+        plugins: [scatterLabelPlugin],
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: { padding: { right: 20, top: 10 } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0F294A',
+              padding: 10,
+              cornerRadius: 8,
+              callbacks: {
+                label: (ctx) => {
+                  const pt = ctx.raw;
+                  const xStr = isEur ? `€${pt.x.toFixed(2)} / inhab.` : `${pt.x.toFixed(3)}% of GDP`;
+                  return `${ctx.dataset.label}: ${xStr} | ${pt.y.toFixed(1)} days`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#F1F5F9' },
+              title: { display: true, text: xLabel, font: { family: 'Inter', size: 11, weight: '600' }, color: '#64748B' },
+              suggestedMin: isEur ? 60 : 0.22,
+              suggestedMax: isEur ? 150 : 0.45
+            },
+            y: {
+              beginAtZero: true,
+              grid: { color: '#E2E8F0' },
+              title: { display: true, text: '2024 Disposition Time (days)', font: { family: 'Inter', size: 11, weight: '600' }, color: '#64748B' }
+            }
+          }
+        }
+      });
+    }
+
+    function renderCaveatsAndAudit() {
+      const grid = document.getElementById('caveatsGrid');
+      grid.innerHTML = '';
+
+      state.activeCountries.forEach(cc => {
+        const meta = COUNTRY_META[cc];
+        const card = document.createElement('div');
+        card.className = 'rounded-lg border border-slate-200 bg-slate-50/70 p-3.5';
+        card.innerHTML = `
+          <div class="flex items-center gap-2 mb-2">
+            <span class="w-2.5 h-2.5 rounded-full" style="background:${meta.color}"></span>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-navy">${cc} &mdash; ${meta.name}</h3>
+          </div>
+          <ul class="space-y-1.5 text-xs text-slate-600 list-disc pl-4">
+            ${meta.caveats.map(c => `<li>${c}</li>`).join('')}
+          </ul>
+        `;
+        grid.appendChild(card);
+      });
+
+      // Missing value audit table
+      const count = state.missingLog.length;
+      document.getElementById('missingPill').textContent = `Missing Audit: ${count} NaNs in EL`;
+      document.getElementById('auditToggleTitle').textContent = `View Missing Value Audit (${count} cells)`;
+
+      const tbody = document.getElementById('auditTableBody');
+      tbody.innerHTML = state.missingLog.map(row => `
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-2 font-semibold text-navy">${row.country_code}</td>
+          <td class="px-4 py-2 text-slate-700">${row.observation_year}</td>
+          <td class="px-4 py-2 text-slate-700">${CATEGORY_LABELS[row.category] || row.category}</td>
+          <td class="px-4 py-2 text-slate-700">${METRIC_META[row.metric]?.label || row.metric}</td>
+          <td class="px-4 py-2 font-mono text-[11px] text-slate-500">${row.sheet || '—'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderAll() {
+      renderCountryChips();
+      renderKpiCards();
+      renderTrajectoryChart();
+      renderScatterChart();
+      renderCaveatsAndAudit();
+    }
+
+    // =========================================================================
+    // 6. EVENT LISTENERS & INITIALIZATION
+    // =========================================================================
+    document.getElementById('categorySelect').addEventListener('change', (e) => {
+      state.category = e.target.value;
+      renderAll();
+    });
+
+    document.getElementById('metricSelect').addEventListener('change', (e) => {
+      state.metric = e.target.value;
+      renderTrajectoryChart();
+    });
+
+    document.getElementById('btnScopeV1').addEventListener('click', () => {
+      state.yearScope = 'v1';
+      document.getElementById('btnScopeV1').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm';
+      document.getElementById('btnScopeFull').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900';
+      renderTrajectoryChart();
+    });
+
+    document.getElementById('btnScopeFull').addEventListener('click', () => {
+      state.yearScope = 'full';
+      document.getElementById('btnScopeFull').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm';
+      document.getElementById('btnScopeV1').className = 'flex-1 px-2 py-1.5 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900';
+      renderTrajectoryChart();
+    });
+
+    document.getElementById('btnBudgetEur').addEventListener('click', () => {
+      state.budgetAxis = 'budget_eur_per_inhabitant';
+      document.getElementById('btnBudgetEur').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm';
+      document.getElementById('btnBudgetGdp').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900';
+      renderScatterChart();
+    });
+
+    document.getElementById('btnBudgetGdp').addEventListener('click', () => {
+      state.budgetAxis = 'budget_pct_gdp';
+      document.getElementById('btnBudgetGdp').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all bg-eublue text-white shadow-sm';
+      document.getElementById('btnBudgetEur').className = 'px-2.5 py-1 text-xs font-semibold rounded-md transition-all text-slate-600 hover:text-slate-900';
+      renderScatterChart();
+    });
+
+    document.getElementById('toggleAuditBtn').addEventListener('click', () => {
+      const container = document.getElementById('auditTableContainer');
+      const chevron = document.getElementById('auditChevron');
+      container.classList.toggle('hidden');
+      chevron.classList.toggle('rotate-180');
+    });
+
+    // Client-side Custom JSON Uploader
+    document.getElementById('jsonUploadInput').addEventListener('change', (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        try {
+          const parsed = JSON.parse(evt.target.result);
+          const { dataset, missingLog } = normalizeCleanJson(parsed);
+          state.data = dataset;
+          state.missingLog = missingLog;
+          document.getElementById('dataSourceBadge').textContent = `Source: Custom (${file.name})`;
+          renderAll();
+          showToast(`Loaded custom dataset: ${file.name}`);
+        } catch (err) {
+          showToast(`Invalid JSON file: ${err.message}`, true);
+        }
+      };
+      reader.readAsText(file);
+      e.target.value = '';
+    });
+
+    // Bootstrap: Try fetching live GitHub Pages JSON first, fallback to EMBEDDED_DATA
+    async function initApp() {
+      const badge = document.getElementById('dataSourceBadge');
+      try {
+        const res = await fetch('data/processed/eujs_clean.json', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const json = await res.json();
+        const { dataset, missingLog } = normalizeCleanJson(json);
+        state.data = dataset;
+        state.missingLog = missingLog;
+        badge.textContent = 'Source: Live Repo JSON';
+      } catch (_err) {
+        const { dataset, missingLog } = normalizeCleanJson(EMBEDDED_DATA);
+        state.data = dataset;
+        state.missingLog = missingLog;
+        badge.textContent = 'Source: Embedded 2026 EUJS';
+      }
+      renderAll();
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
